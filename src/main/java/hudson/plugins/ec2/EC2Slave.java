@@ -77,7 +77,47 @@ public class EC2Slave extends EC2AbstractSlave {
      * Constructor for debugging.
      */
     public EC2Slave(String instanceId) throws FormException, IOException {
-        this(instanceId, instanceId,"debug", "/tmp/hudson", 22, 1, Mode.NORMAL, "debug", "", Collections.<NodeProperty<?>>emptyList(), null, null, null, false, null, "Fake public", "Fake private", null, false);
+        this("debug", instanceId, "debug", "/tmp/hudson", 22, 1, Mode.NORMAL, "debug", "", Collections.<NodeProperty<?>>emptyList(), null, null, null, false, null, "Fake public", "Fake private", null, false);
+    }
+
+    /**
+     * See http://aws.amazon.com/ec2/instance-types/
+     */
+    /*package*/ static int toNumExecutors(InstanceType it) {
+        switch (it) {
+        case T1Micro:       return 1;
+        case M1Small:       return 1;
+        case M1Medium:      return 2;
+        case M1Large:       return 4;
+        case C1Medium:      return 5;
+        case M2Xlarge:      return 6;
+        case M1Xlarge:      return 8;
+        case M22xlarge:     return 13;
+        case M3Xlarge:      return 13;
+        case C1Xlarge:      return 20;
+        case M24xlarge:     return 26;
+        case M32xlarge:     return 26;
+        case Cc14xlarge:    return 33;
+        case Cg14xlarge:    return 33;
+        default:            throw new AssertionError();
+        }
+    }
+
+    public static Instance getInstance(String instanceId) {
+        DescribeInstancesRequest request = new DescribeInstancesRequest();
+    	request.setInstanceIds(Collections.<String>singletonList(instanceId));
+        EC2Cloud cloudInstance = EC2Cloud.get();
+        if (cloudInstance == null)
+        	return null;
+        AmazonEC2 ec2 = cloudInstance.connect();
+    	List<Reservation> reservations = ec2.describeInstances(request).getReservations();
+        Instance i = null;
+    	if (reservations.size() > 0) {
+    		List<Instance> instances = reservations.get(0).getInstances();
+    		if (instances.size() > 0)
+    			i = instances.get(0);
+    	}
+    	return i;
     }
 
     
